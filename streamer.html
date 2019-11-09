@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <style>
+    video {
+      height: 15rem;
+      width: 15rem;
+    }
+  </style>
+  <h1>Streamer</h1>
+  <p id="test"></p>
+  <video autoplay></video>
+  <select id="video-options">
+    <option value="">Select camera</option>
+  </select>
+
+  <script>
+const cameraOptions = document.getElementById('video-options');
+const video = document.querySelector('video');
+let streamStarted = false;
+
+let facingEnvironment = true;
+
+const environmentConstraints = {
+  video: {
+    facingMode: { exact: "environment" }
+  },
+  audio: false
+};
+
+const userConstraints = {
+  video: {
+    facingMode: "user"
+  },
+  audio: false
+};
+
+const test = document.getElementById('test');
+
+cameraOptions.onchange = () => {
+  console.log(cameraOptions);
+
+  let text = document.createTextNode(cameraOptions.value);
+  test.appendChild(text);
+
+  if (facingEnvironment) {
+    const updatedConstraints = {
+      ...userConstraints,
+      deviceId: {
+        exact: cameraOptions.value
+      }
+    };
+    facingEnvironment = !facingEnvironment;
+  } else {
+    const updatedConstraints = {
+      ...environmentConstraints,
+      deviceId: {
+        exact: cameraOptions.value
+      }
+    };
+    facingEnvironment = !facingEnvironment;
+  }
+
+  startStream(updatedConstraints);
+};
+
+const startStream = async (constraints) => {
+  const stream = await navigator.mediaDevices.getUserMedia(constraints);
+  handleStream(stream);
+};
+
+const handleStream = (stream) => {
+  video.srcObject = stream;
+};
+
+const getCameraSelection = async () => {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const videoDevices = devices.filter(device => device.kind === 'videoinput');
+  const options = videoDevices.map(videoDevice => {
+    return `<option value="${videoDevice.deviceId}">${videoDevice.label}</option>`;
+  });
+  cameraOptions.innerHTML = options.join('');
+};
+
+getCameraSelection();
+
+  </script>
+</body>
+</html>
