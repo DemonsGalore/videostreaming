@@ -1,6 +1,7 @@
 const path = require('path');
 const express = require('express');
 const socket = require('socket.io');
+const ss = require('socket.io-stream');
 const https = require('https')
 const fs = require('fs');
 
@@ -42,5 +43,20 @@ const server = https.createServer(httpsOptions, app).listen(5000, () => {
 const io = socket(server);
 
 io.on('connection', (socket) => {
-  console.log("connected", socket);
+  console.log("connected");
+
+  socket.on('test', (data) => {
+    
+    //socket.broadcast.emit('test', data);
+  });
+
+  socket.on('image', (image) => {
+    socket.broadcast.emit('image', image);
+  });
+
+  //ss(socket).on('stream', (stream) => {
+    
+    // var filename = path.basename(data.name);
+    // stream.pipe(fs.createWriteStream(filename));
+  //});
 });

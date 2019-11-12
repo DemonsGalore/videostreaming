@@ -20,75 +20,92 @@
     <option value="">Select camera</option>
   </select>
 
+  <button type="button" id="start-streaming">START STREAMING</button>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io-stream/0.9.1/socket.io-stream.min.js"></script>
   <script>
-const cameraOptions = document.getElementById('video-options');
-const video = document.querySelector('video');
-let streamStarted = false;
+    const socket = io();
+    const stream = ss.createStream();
+    const cameraOptions = document.getElementById('video-options');
+    const video = document.querySelector('video');
+    const buttonStreaming = document.getElementById('start-streaming');
 
-let facingEnvironment = true;
+    let streamStarted = false;
 
-const environmentConstraints = {
-  video: {
-    facingMode: { exact: "environment" }
-  },
-  audio: false
-};
+    let facingEnvironment = true;
 
-const userConstraints = {
-  video: {
-    facingMode: "user"
-  },
-  audio: false
-};
-
-const test = document.getElementById('test');
-
-cameraOptions.onchange = () => {
-  console.log(cameraOptions);
-
-  let text = document.createTextNode(cameraOptions.value);
-  test.appendChild(text);
-
-  if (facingEnvironment) {
-    const updatedConstraints = {
-      ...userConstraints,
-      deviceId: {
-        exact: cameraOptions.value
-      }
+    const constraints = {
+      video: {
+        facingMode: { exact: "environment" }
+      },
+      audio: false
     };
-    facingEnvironment = !facingEnvironment;
-  } else {
-    const updatedConstraints = {
-      ...environmentConstraints,
-      deviceId: {
-        exact: cameraOptions.value
-      }
+
+    const test = document.getElementById('test');
+
+    cameraOptions.onchange = () => {
+
+
+
+      const updatedConstraints = {
+        ...constraints,
+        deviceId: {
+          exact: cameraOptions.value
+        }
+      };
+
+      startStream(updatedConstraints);
     };
-    facingEnvironment = !facingEnvironment;
-  }
 
-  startStream(updatedConstraints);
-};
+    const startStream = async (constraints) => {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
-const startStream = async (constraints) => {
-  const stream = await navigator.mediaDevices.getUserMedia(constraints);
-  handleStream(stream);
-};
+      handleStream(stream);
+    };
 
-const handleStream = (stream) => {
-  video.srcObject = stream;
-};
+    const handleStream = (stream) => {
+      let text = document.createTextNode(stream);
+      test.appendChild(text);
+      ss(socket).emit('stream', stream);
+      video.srcObject = stream;
+    };
 
-const getCameraSelection = async () => {
-  const devices = await navigator.mediaDevices.enumerateDevices();
-  const videoDevices = devices.filter(device => device.kind === 'videoinput');
-  const options = videoDevices.map(videoDevice => {
-    return `<option value="${videoDevice.deviceId}">${videoDevice.label}</option>`;
-  });
-  cameraOptions.innerHTML = options.join('');
-};
+    const getCameraSelection = async () => {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      const options = videoDevices.map(videoDevice => {
+        return `<option value="${videoDevice.deviceId}">${videoDevice.label}</option>`;
+      });
+      cameraOptions.innerHTML = options.join('');
+    };
 
-getCameraSelection();
+    getCameraSelection();
+
+
+    // returns a frame encoded in base64
+    const getFrame = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      const data = canvas.toDataURL('image/png');
+      return data;
+    }
+
+
+    buttonStreaming.addEventListener('click', () => {
+
+      socket.emit('test', { test: "test" });
+
+    });
+
+    
+
+    setInterval(() => {
+      let image = getFrame();
+      socket.emit('image', image);
+    }, 1000);
+
 
   </script>
 </body>
